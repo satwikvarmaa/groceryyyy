@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Grocery Billing Software</title>
+    <style>
+        table {
+            border-collapse: collapse;
+            width: 50%;
+        }
+        th, td {
+            border: 1px solid black;
+            padding: 8px;
+            text-align: left;
+        }
+    </style>
+</head>
+<body>
+    <h1>Grocery Billing Software</h1>
+    <form id="billingForm">
+        <label for="item">Item:</label>
+        <select id="item" name="item">
+            <option value="" selected disabled>Select an item</option>
+        </select>
+        <label for="price">Price:</label>
+        <input type="number" id="price" name="price" min="0" step="0.01" required>
+        <label for="quantity">Quantity:</label>
+        <input type="number" id="quantity" name="quantity" min="1" required>
+        <button type="submit">Add Item</button>
+    </form>
+    <br>
+    <table id="billTable">
+        <tr>
+            <th>Item</th>
+            <th>Price</th>
+            <th>Quantity</th>
+        </tr>
+    </table>
+    <br>
+    <h3>Total: <span id="total">0</span></h3>
+    <!-- ...existing HTML code... -->
+<br>
+<button id="resetBillBtn" type="button">Reset Bill</button>
+<!-- ...existing HTML code... -->
+
+
+    <script>
+        // Function to reset the bill
+function resetBill() {
+  document.getElementById("billTable").innerHTML = "<tr><th>Item</th><th>Price</th><th>Quantity</th></tr>";
+  document.getElementById("total").innerText = "0";
+}
+
+// Fetch the grocery items from the backend API
+fetch('/get_items')
+  .then(response => response.json())
+  .then(data => {
+    const selectElement = document.getElementById("item");
+    const priceElement = document.getElementById("price");
+    const itemNameMap = new Map(); // Map to store item name based on item ID
+    data.forEach(item => {
+      const option = document.createElement("option");
+      option.value = item[0]; // Assuming the first element in the tuple is the ID
+      option.innerText = item[1]; // Assuming the second element in the tuple is the item name
+      selectElement.appendChild(option);
+      itemNameMap.set(item[0], item[1]); // Store the item name in the map
+    });
+
+    // Update the price based on the selected item
+    selectElement.addEventListener("change", function() {
+      const selectedItem = this.options[this.selectedIndex].value;
+      const selectedItemData = data.find(item => item[0] === parseInt(selectedItem));
+      if (selectedItemData) {
+        priceElement.value = selectedItemData[2]; // Assuming the third element in the tuple is the price
+      } else {
+        priceElement.value = ""; // Reset the price if the item is not found
+      }
+    });
+
+    // Add item to the bill table
+    document.getElementById("billingForm").addEventListener("submit", function(event) {
+      event.preventDefault();
+      var item = selectElement.options[selectElement.selectedIndex].text; // Get the selected item name from the select element
+      var price = parseFloat(priceElement.value);
+      var quantity = parseInt(document.getElementById("quantity").value);
+
+      var newRow = document.createElement("tr");
+      newRow.innerHTML = "<td>" + item + "</td><td>" + price + "</td><td>" + quantity + "</td>";
+      document.getElementById("billTable").appendChild(newRow);
+
+      var total = parseFloat(document.getElementById("total").innerText);
+      total += price * quantity;
+      document.getElementById("total").innerText = total.toFixed(2);
+
+      selectElement.value = ""; // Reset the selected item
+      priceElement.value = "";
+      document.getElementById("quantity").value = "";
+    });
+  });
+
+// Reset bill button event listener
+document.getElementById("resetBillBtn").addEventListener("click", function() {
+  resetBill();
+});
+
+    </script>
+</body>
+</html>
